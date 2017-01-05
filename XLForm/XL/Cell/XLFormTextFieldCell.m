@@ -145,13 +145,16 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
         self.textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
         self.textField.keyboardType = UIKeyboardTypeDefault;
     }
-
+    
     self.textLabel.text = ((self.rowDescriptor.required && self.rowDescriptor.title && self.rowDescriptor.sectionDescriptor.formDescriptor.addAsteriskToRequiredRowsTitle) ? [NSString stringWithFormat:@"%@*", self.rowDescriptor.title] : self.rowDescriptor.title);
-
+    
     self.textField.text = self.rowDescriptor.value ? [self.rowDescriptor displayTextValue] : self.rowDescriptor.noValueDisplayText;
     [self.textField setEnabled:!self.rowDescriptor.isDisabled];
-    self.textField.textColor = self.rowDescriptor.isDisabled ? [UIColor grayColor] : [UIColor blackColor];
-    self.textField.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+    if (!_textFieldClass) {
+        self.textField.textColor = self.rowDescriptor.isDisabled ? [UIColor grayColor] : [UIColor blackColor];
+        self.textField.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+    }
+    
 }
 
 -(BOOL)formDescriptorCellCanBecomeFirstResponder
@@ -178,6 +181,14 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
 
 #pragma mark - Properties
 
+-(void) setTextFieldClass:(Class)textFieldClass
+{
+    _textFieldClass = textFieldClass;
+    [self.textField removeFromSuperview];
+    _textField = nil;
+    [self configure];
+}
+
 -(UILabel *)textLabel
 {
     if (_textLabel) return _textLabel;
@@ -188,7 +199,12 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
 -(UITextField *)textField
 {
     if (_textField) return _textField;
-    _textField = [UITextField autolayoutView];
+    
+    if (_textFieldClass) {
+        _textField = [_textFieldClass autolayoutView];
+    } else {
+        _textField = [UITextField autolayoutView];
+    }
     return _textField;
 }
 
@@ -199,7 +215,7 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
     NSMutableArray * result = [[NSMutableArray alloc] init];
     [self.textLabel setContentHuggingPriority:500 forAxis:UILayoutConstraintAxisHorizontal];
     [self.textLabel setContentCompressionResistancePriority:1000 forAxis:UILayoutConstraintAxisHorizontal];
-
+    
     // Add Constraints
     [result addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(margin)-[_textField]-(margin)-|"
                                                                         options:NSLayoutFormatAlignAllBaseline
@@ -209,7 +225,7 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
                                                                         options:NSLayoutFormatAlignAllBaseline
                                                                         metrics:[NSDictionary dictionaryWithObjectsAndKeys:@(11.0), @"margin", nil]
                                                                           views:NSDictionaryOfVariableBindings(_textLabel)]];
-
+    
     return result;
 }
 
@@ -250,7 +266,7 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
             self.dynamicCustomConstraints = [NSMutableArray arrayWithArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[textField]-|" options:0 metrics:nil views:views]];
         }
     }
-
+    
     [self.contentView addConstraints:self.dynamicCustomConstraints];
     [super updateConstraints];
 }
@@ -286,7 +302,7 @@ NSString *const XLFormTextFieldMaxNumberOfCharacters = @"textFieldMaxNumberOfCha
             return NO;
         }
     }
-
+    
     // Otherwise, leave response to view controller
     return [self.formViewController textField:textField shouldChangeCharactersInRange:range replacementString:string];
 }
